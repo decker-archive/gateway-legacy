@@ -22,6 +22,7 @@ class GatewayConnection:
 
         # intitiate zlib things
         self.deflator = zlib.compressobj()
+        self.user_info = None
 
     async def check_session_id(self):
         while True:
