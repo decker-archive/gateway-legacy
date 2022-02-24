@@ -18,7 +18,7 @@ async def heartbeat():
         'gateway': 'wss://gateway.vincentrps.xyz'
     }
 
-app.run('0.0.0.0', 80)
+app.run('0.0.0.0', 443)
 loop = asyncio.new_event_loop()
 loop.run_until_complete(start_gateway())
 loop.run_forever()
