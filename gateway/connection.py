@@ -12,6 +12,8 @@ def yield_chunks(input_list: Sequence[Any], chunk_size: int):
 def byte(data: Union[str, bytes]) -> bytes:
     return data if isinstance(data, bytes) else data.encode()
 
+secret = 'adb8ddecad0ec633da6651a1b441026fdc646892'
+
 class GatewayConnection:
     def __init__(self, ws: server.WebSocketServerProtocol, encoding: str):
         self.ws = ws
@@ -24,6 +26,10 @@ class GatewayConnection:
     async def check_session_id(self):
         while True:
             if self.closed:
+                break
+            
+            if self.session_id == secret:
+                # we don't need to check.
                 break
             
             if users.find_one({'session_ids': [self.session_id]}) == None:
@@ -90,6 +96,14 @@ class GatewayConnection:
                 's': data.get('s', ''),
                 'd': None,
             })
+        elif data.get('t', '') == 'DISPATCH':
+            if self.session_id != secret:
+                await self.ws.close(6000, 'Invalid Dispatch Sent')
+                self.closed = True
+                return
+            else:
+                d = data.get('d')
+                await dispatch_event(d['name'], d['data'])
         
     async def do_recv(self):
         while True:
