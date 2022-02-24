@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import quart
+import json
 from websockets import server
 from gateway import handler
 
@@ -17,6 +18,7 @@ async def heartbeat():
         'http': 'https://hatsu.vincentrps.xyz',
         'gateway': 'wss://gateway.vincentrps.xyz'
     }
+    return quart.Response(json.dumps(d), 200)
 
 app.run('0.0.0.0', 443)
 loop = asyncio.new_event_loop()
