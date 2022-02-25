@@ -23,6 +23,7 @@ class GatewayConnection:
         # intitiate zlib things
         self.deflator = zlib.compressobj()
         self.user_info = None
+        self.session_id = None
 
     async def check_session_id(self):
         while True:
@@ -106,6 +107,22 @@ class GatewayConnection:
             else:
                 d = data.get('d')
                 await dispatch_event(d['name'], d['data'])
+        elif data.get('t', '') == 'DISPATCH_TO':
+            if self.session_id != secret:
+                await self.ws.close(6000, 'Invalid Dispatch Sent')
+                self.closed = True
+                return
+            
+            _d = data.get('d')
+            d = {
+                't': _d['event_name'].upper(),
+                'd': _d['data']
+            }
+            s = users.find_one({'id': _d['user']})
+            for connection in connections:
+                for session_id in s['session_ids']:
+                    if session_id == connection.session_id:
+                        await connection.send(d)
         
     async def do_recv(self):
         while True:
@@ -126,7 +143,7 @@ class GatewayConnection:
             await self.ws.close(4004, 'Invalid encoding')
             self.closed = True
             return
-        connections.add(self.ws)
+        connections.add(self)
         self.session_id = data.get('session_id', '')
         await self.check_session_id()
 
@@ -138,7 +155,7 @@ class GatewayConnection:
         except exceptions.ConnectionClosedError:
             return
 
-connections: Set[server.WebSocketServerProtocol] = set()
+connections: Set[GatewayConnection] = set()
 # 'adb8ddecad0ec633da6651a1b441026fdc646892'
 async def dispatch_event(event_name: str, data: dict):
     d = {
@@ -146,4 +163,4 @@ async def dispatch_event(event_name: str, data: dict):
         'd': data
     }
     for connection in connections.copy():
-        await connection.send(json.dumps(d))
+        await connection.send(d)
