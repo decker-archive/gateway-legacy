@@ -47,6 +47,7 @@ class GatewayConnection:
                     'flags': find['flags'],
                     'verified': find['verified'],
                     'system': find['system'],
+                    'session_ids': find['session_ids']
                 }
                 self.user_info = json.dumps(to_give)
                 break
