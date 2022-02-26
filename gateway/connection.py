@@ -3,7 +3,7 @@ import zlib
 import json
 from typing import Sequence, Any, Set, Union
 from websockets import server, exceptions
-from .db import users
+from .db import users, members
 
 def yield_chunks(input_list: Sequence[Any], chunk_size: int):
     for idx in range(0, len(input_list), chunk_size):
@@ -107,6 +107,7 @@ class GatewayConnection:
             else:
                 d = data.get('d')
                 await dispatch_event(d['name'], d['data'])
+        
         elif data.get('t', '') == 'DISPATCH_TO':
             if self.session_id != secret:
                 await self.ws.close(6000, 'Invalid Dispatch Sent')
@@ -124,6 +125,20 @@ class GatewayConnection:
                     if session_id == connection.session_id:
                         await connection.send(d)
         
+        elif data.get('t', '') == 'DISPATCH_TO_GUILD':
+            ms = members.find({'guild_id': data['guild_id']})
+            _d = data.get('d')
+            d = {
+                't': _d['event_name'].upper(),
+                'd': _d['data']
+            }
+
+            for connection in connections:
+                for member in ms:
+                    for session_id in member['session_ids']:
+                        if session_id == connection.session_id:
+                            await connection.send(d)
+
     async def do_recv(self):
         while True:
             if self.closed:
