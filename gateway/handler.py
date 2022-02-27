@@ -5,22 +5,20 @@ from .connection import GatewayConnection
 from .connection_v2 import GatewayConnection as ConnectionV2
 from websockets import server
 
-async def gateway_handler(ws: server.WebSocketServerProtocol, url):
+async def gateway_handler(ws: server.WebSocketServerProtocol):
     try:
         while True:
             r = await ws.recv()
 
             d: dict = json.loads(r)
 
-            args = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
-
             try:
-                version = args['v'][0]
+                version = d['v']
             except(KeyError, IndexError):
                 version = "2"
             
             try:
-                encoding = args['encoding'][0]
+                encoding = d['encoding']
             except(KeyError, IndexError):
                 encoding = 'json'
 
