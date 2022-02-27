@@ -17,7 +17,7 @@ async def gateway_handler(ws: server.WebSocketServerProtocol, url):
             try:
                 version = args['v'][0]
             except(KeyError, IndexError):
-                version = 2
+                version = "2"
             
             try:
                 encoding = args['encoding'][0]
