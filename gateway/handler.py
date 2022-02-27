@@ -24,12 +24,12 @@ async def gateway_handler(ws: server.WebSocketServerProtocol, url):
             except(KeyError, IndexError):
                 encoding = 'json'
 
-            if version == 1:
+            if version == '1':
                 connection = GatewayConnection(ws, encoding)
-            elif version == 2:
+            elif version == '2':
                 connection = ConnectionV2(ws, encoding)
             else:
-                await ws.close(7000, 'Invalid Gateway Version')
+                await ws.close(4007, 'Invalid Gateway Version')
 
             break
 
