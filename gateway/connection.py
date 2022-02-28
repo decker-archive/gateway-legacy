@@ -34,11 +34,11 @@ class GatewayConnection:
                 # we don't need to check.
                 break
             
-            if users.find_one({'session_ids': [self.session_id]}) == None:
+            if await users.find_one({'session_ids': [self.session_id]}) == None:
                 await self.ws.close(4002, 'Invalid authorization')
                 break
             else:
-                find = users.find_one({'session_ids': [self.session_id]})
+                find = await users.find_one({'session_ids': [self.session_id]})
                 to_give = {
                     'id': find['id'],
                     'username': find['username'],
@@ -119,14 +119,14 @@ class GatewayConnection:
                 't': _d['event_name'].upper(),
                 'd': _d['data']
             }
-            s = users.find_one({'id': _d['user']})
+            s = await users.find_one({'id': _d['user']})
             for connection in connections:
                 for session_id in s['session_ids']:
                     if session_id == connection.session_id:
                         await connection.send(d)
         
         elif data.get('t', '') == 'DISPATCH_TO_GUILD':
-            ms = members.find({'guild_id': data['guild_id']})
+            ms = await members.find({'guild_id': data['guild_id']})
             _d = data.get('d')
             d = {
                 't': _d['event_name'].upper(),
