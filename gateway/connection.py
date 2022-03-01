@@ -124,7 +124,7 @@ class GatewayConnection:
             })
         elif data.get('t', '') == 'DISPATCH':
             if self.session_id != secret:
-                await self.ws.close(6000, 'Invalid Dispatch Sent')
+                await self.ws.close(4004, 'Invalid Dispatch Sent')
                 self.closed = True
                 return
             else:
@@ -167,6 +167,25 @@ class GatewayConnection:
                         if session_id == connection.session_id:
                             await connection.send(d)
         
+        elif data.get('t', '') == 'NOTIFICATION':
+            if self.session_id != secret:
+                await self.ws.close(4004, 'Invalid Dispatch Sent')
+                self.closed = True
+                return
+            
+            user = await users.find_one({'id': data['id']})
+
+            data = {
+                't': 'NOTIFICATION',
+                'type': data.get('type'),
+                'excerpt': data.get('excerpt')
+            }
+
+            for connection in connections:
+                for session_id in user['session_ids']:
+                    if session_id == connection.session_id:
+                        await connection.send(data)
+        
         elif data.get('t', '') == 'PRESENCE':
             if data.get('type', '') not in (1, 2, 3, 4):
                 return
@@ -207,12 +226,12 @@ class GatewayConnection:
             ms = members.find({'id': self.user_info['id']})
 
             for member in ms:
-                _mems = guilds.find_one({'guild_id': member['guild_id']})
+                _mems = await guilds.find_one({'guild_id': member['guild_id']})
                 for connection in connections:
                     for mem in _mems:
                         for session_id in mem['session_ids']:
                             if session_id == connection.session_id:
-                                await self.send(dis)
+                                await connection.send(dis)
 
     async def do_recv(self):
         while True:
