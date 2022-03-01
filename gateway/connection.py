@@ -3,7 +3,7 @@ import zlib
 import json
 from typing import Sequence, Any, Set, Union
 from websockets import server, exceptions
-from .db import users, members
+from .db import users, members, guilds, channels, presences
 
 def yield_chunks(input_list: Sequence[Any], chunk_size: int):
     for idx in range(0, len(input_list), chunk_size):
@@ -24,6 +24,7 @@ class GatewayConnection:
         self.deflator = zlib.compressobj()
         self.user_info = None
         self.session_id = None
+        self.presences: bool = False
 
     async def check_session_id(self):
         while True:
@@ -91,6 +92,28 @@ class GatewayConnection:
             'i': None,
         })
 
+        if self.session_id == secret:
+            return
+
+        membered = await members.find({'user': {'id': self.user_info['id']}})
+
+        guilds_to_give: list[dict] = []
+
+        for member in membered:
+            obj: dict = await guilds.find_one({'id': member['guild_id']})
+            obj2: dict = await channels.find_one({'guild_id': member['guild_id']})
+            obj['channels'] = obj2
+
+            guilds_to_give.append(obj)
+        
+        for guild in guilds_to_give:
+            await self.send({
+                't': 'GUILD_INIT',
+                's': self.session_id,
+                'd': guild,
+                'i': ''
+            })
+
     async def poll_recv(self, data: dict):
         if data.get('t', '') == 'HEARTBEAT':
             await self.send({
@@ -110,7 +133,7 @@ class GatewayConnection:
         
         elif data.get('t', '') == 'DISPATCH_TO':
             if self.session_id != secret:
-                await self.ws.close(6000, 'Invalid Dispatch Sent')
+                await self.ws.close(4004, 'Invalid Dispatch Sent')
                 self.closed = True
                 return
             
@@ -126,7 +149,12 @@ class GatewayConnection:
                         await connection.send(d)
         
         elif data.get('t', '') == 'DISPATCH_TO_GUILD':
-            ms = await members.find({'guild_id': data['guild_id']})
+            if self.session_id != secret:
+                await self.ws.close(4004, 'Invalid Dispatch Sent')
+                self.closed = True
+                return
+
+            ms = members.find({'guild_id': data['guild_id']})
             _d = data.get('d')
             d = {
                 't': _d['event_name'].upper(),
@@ -138,6 +166,53 @@ class GatewayConnection:
                     for session_id in member['session_ids']:
                         if session_id == connection.session_id:
                             await connection.send(d)
+        
+        elif data.get('t', '') == 'PRESENCE':
+            if data.get('type', '') not in (1, 2, 3, 4):
+                return
+
+            try:
+                if data.get('embed'):
+                    em = data.get('embed')
+                    embed = {
+                    'name': str(em['name']),
+                    'description': str(em['description']),
+                    'banner_url': str(em.get('banner_url')),
+                    'text': {
+                        'top': str(em.get('top_text')),
+                        'bottom': str(em.get('bottom_text')),
+                    }
+                }
+                else:
+                    embed = None
+
+            except:
+                return
+
+            try:
+                d = {
+                'id': self.user_info['id'], 
+                'data': {
+                    'type': data['type'],
+                    'description': data['description'],
+                    'emoji': data.get('emoji'),
+                    'embed': embed,
+                }
+            }
+            except KeyError:
+                return
+            dis = d.copy()
+            await presences.insert_one(d)
+
+            ms = members.find({'id': self.user_info['id']})
+
+            for member in ms:
+                _mems = guilds.find_one({'guild_id': member['guild_id']})
+                for connection in connections:
+                    for mem in _mems:
+                        for session_id in mem['session_ids']:
+                            if session_id == connection.session_id:
+                                await self.send(dis)
 
     async def do_recv(self):
         while True:
@@ -158,9 +233,15 @@ class GatewayConnection:
             await self.ws.close(4004, 'Invalid encoding')
             self.closed = True
             return
+
         connections.add(self)
         self.session_id = data.get('session_id', '')
         await self.check_session_id()
+
+        self.presences = data.get('presences', False)
+
+        if self.presences not in (True, False):
+            await self.ws.close(4001, 'Presence has to be a bool.')
 
         await self.do_hello()
         await asyncio.sleep(9)
