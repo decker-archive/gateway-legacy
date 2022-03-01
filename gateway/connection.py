@@ -5,14 +5,18 @@ from typing import Sequence, Any, Set, Union
 from websockets import server, exceptions
 from .db import users, members, guilds, channels, presences
 
+
 def yield_chunks(input_list: Sequence[Any], chunk_size: int):
     for idx in range(0, len(input_list), chunk_size):
         yield input_list[idx : idx + chunk_size]
 
+
 def byte(data: Union[str, bytes]) -> bytes:
     return data if isinstance(data, bytes) else data.encode()
 
+
 secret = 'adb8ddecad0ec633da6651a1b441026fdc646892'
+
 
 class GatewayConnection:
     def __init__(self, ws: server.WebSocketServerProtocol, encoding: str):
@@ -30,11 +34,11 @@ class GatewayConnection:
         while True:
             if self.closed:
                 break
-            
+
             if self.session_id == secret:
                 # we don't need to check.
                 break
-            
+
             if await users.find_one({'session_ids': [self.session_id]}) == None:
                 await self.ws.close(4002, 'Invalid authorization')
                 break
@@ -49,21 +53,21 @@ class GatewayConnection:
                     'flags': find['flags'],
                     'verified': find['verified'],
                     'system': find['system'],
-                    'session_ids': find['session_ids']
+                    'session_ids': find['session_ids'],
                 }
                 self.user_info = json.dumps(to_give)
                 break
-    
+
     async def __send(self, data: bytes, chunk_size: int):
         await self.ws.send(yield_chunks(data, chunk_size))
-    
+
     async def _send(self, data):
         d1 = self.deflator.compress(data)
         d2 = self.deflator.flush(zlib.Z_FULL_FLUSH)
         d = d1 + d2
 
         await self.__send(d, 1024)
-    
+
     async def send(self, payload: Any):
         if isinstance(payload, dict):
             if self.encoding == 'json':
@@ -72,25 +76,29 @@ class GatewayConnection:
                 await self._send(byte(json.dumps(payload)))
         else:
             await self._send(byte(payload))
-    
+
     async def do_hello(self):
-        await self.send({
-            't': 'HELLO',
-            's': self.session_id,
-            'd': None,
-            'i': 'Sent once we have verified your session_id, '
-            'the data given will be null. '
-            'please wait for the READY event before continuing-'
-            '-with any requests.'
-        })
-    
+        await self.send(
+            {
+                't': 'HELLO',
+                's': self.session_id,
+                'd': None,
+                'i': 'Sent once we have verified your session_id, '
+                'the data given will be null. '
+                'please wait for the READY event before continuing-'
+                '-with any requests.',
+            }
+        )
+
     async def do_ready(self):
-        await self.send({
-            't': 'READY',
-            's': self.session_id,
-            'd': self.user_info,
-            'i': None,
-        })
+        await self.send(
+            {
+                't': 'READY',
+                's': self.session_id,
+                'd': self.user_info,
+                'i': None,
+            }
+        )
 
         if self.session_id == secret:
             return
@@ -105,23 +113,22 @@ class GatewayConnection:
             obj['channels'] = obj2
 
             guilds_to_give.append(obj)
-        
+
         for guild in guilds_to_give:
-            await self.send({
-                't': 'GUILD_INIT',
-                's': self.session_id,
-                'd': guild,
-                'i': ''
-            })
+            await self.send(
+                {'t': 'GUILD_INIT', 's': self.session_id, 'd': guild, 'i': ''}
+            )
 
     async def poll_recv(self, data: dict):
         if data.get('t', '') == 'HEARTBEAT':
-            await self.send({
-                't': 'ACK',
-                '_s': self.session_id,
-                's': data.get('s', ''),
-                'd': None,
-            })
+            await self.send(
+                {
+                    't': 'ACK',
+                    '_s': self.session_id,
+                    's': data.get('s', ''),
+                    'd': None,
+                }
+            )
         elif data.get('t', '') == 'DISPATCH':
             if self.session_id != secret:
                 await self.ws.close(4004, 'Invalid Dispatch Sent')
@@ -130,24 +137,21 @@ class GatewayConnection:
             else:
                 d = data.get('d')
                 await dispatch_event(d['name'], d['data'])
-        
+
         elif data.get('t', '') == 'DISPATCH_TO':
             if self.session_id != secret:
                 await self.ws.close(4004, 'Invalid Dispatch Sent')
                 self.closed = True
                 return
-            
+
             _d = data.get('d')
-            d = {
-                't': _d['event_name'].upper(),
-                'd': _d['data']
-            }
+            d = {'t': _d['event_name'].upper(), 'd': _d['data']}
             s = await users.find_one({'id': _d['user']})
             for connection in connections:
                 for session_id in s['session_ids']:
                     if session_id == connection.session_id:
                         await connection.send(d)
-        
+
         elif data.get('t', '') == 'DISPATCH_TO_GUILD':
             if self.session_id != secret:
                 await self.ws.close(4004, 'Invalid Dispatch Sent')
@@ -156,17 +160,14 @@ class GatewayConnection:
 
             ms = members.find({'guild_id': data['guild_id']})
             _d = data.get('d')
-            d = {
-                't': _d['event_name'].upper(),
-                'd': _d['data']
-            }
+            d = {'t': _d['event_name'].upper(), 'd': _d['data']}
 
             for connection in connections:
                 for member in ms:
                     for session_id in member['session_ids']:
                         if session_id == connection.session_id:
                             await connection.send(d)
-        
+
         elif data.get('t', '') == 'NOTIFICATION':
             if self.session_id != secret:
                 # could be a mistake?
@@ -177,14 +178,14 @@ class GatewayConnection:
             data = {
                 't': 'NOTIFICATION',
                 'type': data.get('type'),
-                'excerpt': data.get('excerpt')
+                'excerpt': data.get('excerpt'),
             }
 
             for connection in connections:
                 for session_id in user['session_ids']:
                     if session_id == connection.session_id:
                         await connection.send(data)
-        
+
         elif data.get('t', '') == 'PRESENCE':
             if data.get('type', '') not in (1, 2, 3, 4):
                 return
@@ -193,14 +194,14 @@ class GatewayConnection:
                 if data.get('embed'):
                     em = data.get('embed')
                     embed = {
-                    'name': str(em['name']),
-                    'description': str(em['description']),
-                    'banner_url': str(em.get('banner_url')),
-                    'text': {
-                        'top': str(em.get('top_text')),
-                        'bottom': str(em.get('bottom_text')),
+                        'name': str(em['name']),
+                        'description': str(em['description']),
+                        'banner_url': str(em.get('banner_url')),
+                        'text': {
+                            'top': str(em.get('top_text')),
+                            'bottom': str(em.get('bottom_text')),
+                        },
                     }
-                }
                 else:
                     embed = None
 
@@ -209,14 +210,14 @@ class GatewayConnection:
 
             try:
                 d = {
-                'id': self.user_info['id'], 
-                'data': {
-                    'type': data['type'],
-                    'description': data['description'],
-                    'emoji': data.get('emoji'),
-                    'embed': embed,
+                    'id': self.user_info['id'],
+                    'data': {
+                        'type': data['type'],
+                        'description': data['description'],
+                        'emoji': data.get('emoji'),
+                        'embed': embed,
+                    },
                 }
-            }
             except KeyError:
                 return
             dis = d.copy()
@@ -269,12 +270,10 @@ class GatewayConnection:
         except exceptions.ConnectionClosedError:
             return
 
+
 connections: Set[GatewayConnection] = set()
 # 'adb8ddecad0ec633da6651a1b441026fdc646892'
 async def dispatch_event(event_name: str, data: dict):
-    d = {
-        't': event_name.upper(),
-        'd': data
-    }
+    d = {'t': event_name.upper(), 'd': data}
     for connection in connections.copy():
         await connection.send(d)
