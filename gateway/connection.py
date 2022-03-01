@@ -211,7 +211,7 @@ class GatewayConnection:
             try:
                 d = {
                     'id': self.user_info['id'],
-                    'data': {
+                    'd': {
                         'type': data['type'],
                         'description': data['description'],
                         'emoji': data.get('emoji'),
@@ -222,6 +222,8 @@ class GatewayConnection:
                 return
             dis = d.copy()
             await presences.insert_one(d)
+
+            dis['t'] = 'PRESENCE_UPDATE'
 
             ms = members.find({'id': self.user_info['id']})
 
