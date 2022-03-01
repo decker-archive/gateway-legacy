@@ -169,10 +169,9 @@ class GatewayConnection:
         
         elif data.get('t', '') == 'NOTIFICATION':
             if self.session_id != secret:
-                await self.ws.close(4004, 'Invalid Dispatch Sent')
-                self.closed = True
+                # could be a mistake?
                 return
-            
+
             user = await users.find_one({'id': data['id']})
 
             data = {
