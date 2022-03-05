@@ -1,8 +1,10 @@
 import asyncio
 import json
-from .connection import GatewayConnection
+from typing import Dict, List
+from .connection import GatewayConnection, sessions
 from websockets import server
 
+available: Dict[str, List] = {}
 
 async def gateway_handler(ws: server.WebSocketServerProtocol):
     try:
@@ -10,6 +12,19 @@ async def gateway_handler(ws: server.WebSocketServerProtocol):
             r = await ws.recv()
 
             d: dict = json.loads(r)
+
+            valid_ws = False
+
+            for key, _ in sessions.items():
+                if key == ws.port:
+                    sesions = sessions.get(key, [])
+                    for session in sesions:
+                        if d.get('id', '') == session:
+                            valid_ws = True
+
+            if not valid_ws:
+                await ws.close(4001, 'Invalid Gateway ID for This Port')
+                break
 
             try:
                 encoding = d['encoding']
@@ -19,9 +34,12 @@ async def gateway_handler(ws: server.WebSocketServerProtocol):
             connection = GatewayConnection(ws, encoding)
 
             break
-
-        await connection.run(d)
-        await asyncio.Future()
+        try:
+            await connection.run(d)
+            await asyncio.Future()
+        except UnboundLocalError:
+            # invalid port.
+            return
 
     except asyncio.CancelledError:
         pass

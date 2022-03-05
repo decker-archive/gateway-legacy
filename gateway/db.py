@@ -1,13 +1,17 @@
 import pymongo
 import os
 import dotenv
+import asyncio
 import motor.core
 import motor.motor_asyncio
 
 dotenv.load_dotenv()
 
+loop = asyncio.new_event_loop()
+
 client: motor.core.AgnosticClient = motor.motor_asyncio.AsyncIOMotorClient(
-    os.getenv('mongo_uri')
+    os.getenv('mongo_uri'),
+    io_loop=loop
 )
 
 _users: motor.core.AgnosticDatabase = client.get_database(

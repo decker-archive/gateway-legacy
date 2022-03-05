@@ -1,7 +1,7 @@
 import asyncio
 import zlib
 import json
-from typing import Sequence, Any, Set, Union
+from typing import Sequence, Any, Set, Union, Dict, List
 from websockets import server, exceptions
 from .db import users, members, guilds, channels, presences
 
@@ -16,6 +16,7 @@ def byte(data: Union[str, bytes]) -> bytes:
 
 
 secret = 'adb8ddecad0ec633da6651a1b441026fdc646892'
+sessions: Dict[str, List[int]] = {}
 
 
 class GatewayConnection:
@@ -255,6 +256,8 @@ class GatewayConnection:
             self.closed = True
             return
 
+        self.id = data['id']
+
         connections.add(self)
         self.session_id = data.get('session_id', '')
         await self.check_session_id()
@@ -270,6 +273,7 @@ class GatewayConnection:
         try:
             await self.do_recv()
         except exceptions.ConnectionClosedError:
+            sessions[self.ws.port].remove(self.id)
             return
 
 
