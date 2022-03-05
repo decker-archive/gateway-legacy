@@ -33,7 +33,7 @@ async def start_gateway():
             try:
                 await server.serve(
                     handler.gateway_handler,
-                    'gateway.vincentrps.xyz',
+                    '0.0.0.0',
                     port,
                     ping_timeout=20,
                     process_request=health_check,
@@ -75,7 +75,7 @@ async def serve_port():
 
     await server.serve(
             handle_port,
-            'gateway.vincentrps.xyz',
+            '0.0.0.0',
             443,
             ping_timeout=2,
             process_request=health_check
