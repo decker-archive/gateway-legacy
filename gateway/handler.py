@@ -25,10 +25,10 @@ async def gateway_handler(ws: server.WebSocketServerProtocol):
                         if d.get('id', '') == session:
                             valid_ws = True
 
-            if d.get('session_id') == secret:
+            if d.get('session_id', '') == secret:
                 valid_ws = True
 
-            if not valid_ws:
+            if valid_ws == False:
                 await ws.close(4001, 'Invalid Gateway ID for This Port')
                 break
 
