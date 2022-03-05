@@ -51,7 +51,7 @@ def get_port(ws) -> int:
     if av == None:
         return get_port(ws)
 
-    if len(av) < 4000:
+    if len(av) > 3999:
         return get_port(ws)
 
     return port
