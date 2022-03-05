@@ -256,7 +256,7 @@ class GatewayConnection:
             self.closed = True
             return
 
-        self.id = data['id']
+        self.id = data.get('id', '')
 
         connections.add(self)
         self.session_id = data.get('session_id', '')
@@ -273,7 +273,10 @@ class GatewayConnection:
         try:
             await self.do_recv()
         except exceptions.ConnectionClosedError:
-            sessions[self.ws.port].remove(self.id)
+            try:
+                sessions[self.ws.port].remove(self.id)
+            except ValueError:
+                pass
             return
 
 

@@ -22,15 +22,18 @@ async def start_gateway():
     await asyncio.sleep(10)
 
     for port in range(49151):
-        if port < 1024 or port == 443:
+        if port < 1024:
             pass
         elif port > 10000:
+            break
+        elif port == 443:
+            print('e')
             break
         else:
             try:
                 await server.serve(
                     handler.gateway_handler,
-                    '0.0.0.0',
+                    'gateway.vincentrps.xyz',
                     port,
                     ping_timeout=20,
                     process_request=health_check,
@@ -70,16 +73,13 @@ async def serve_port():
     print('DEBUG:gateway:Serving IPs!')
     await asyncio.sleep(5)
 
-    try:
-        await server.serve(
+    await server.serve(
             handle_port,
-            '0.0.0.0',
+            'gateway.vincentrps.xyz',
             443,
             ping_timeout=2,
             process_request=health_check
         )
-    except:
-        return await serve_port()
 
 loop.run_until_complete(serve_port())
 loop.run_until_complete(start_gateway())
