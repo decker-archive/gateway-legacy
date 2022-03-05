@@ -48,6 +48,9 @@ def get_port(ws) -> int:
     if av == None:
         return get_port(ws)
 
+    if len(av) < 4000:
+        return get_port(ws)
+
     return port
 
 async def handle_port(ws: server.WebSocketServerProtocol):
