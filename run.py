@@ -16,12 +16,12 @@ async def health_check(path, head):
     if path == '/health':
         return http.HTTPStatus.OK, [], b'OK\n'
     elif path == '/port':
-        return get_port()
+        return json.dumps({'port': get_port()})
 
 
 async def start_gateway():
     print('DEBUG:gateway:Starting Gateway')
-    await asyncio.sleep(10)
+    await asyncio.sleep(15)
 
     for port in range(49151):
         if port < 1024:
@@ -73,7 +73,7 @@ async def handle_port(ws: server.WebSocketServerProtocol):
 
 async def serve_port():
     print('DEBUG:gateway:Serving IPs!')
-    await asyncio.sleep(7)
+    await asyncio.sleep(10)
 
     await server.serve(
             handle_port,
