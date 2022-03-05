@@ -1,7 +1,7 @@
 import asyncio
 import json
 from typing import Dict, List
-from .connection import GatewayConnection, sessions
+from .connection import GatewayConnection, sessions, secret
 from websockets import server
 
 available: Dict[str, List] = {}
@@ -13,6 +13,9 @@ async def gateway_handler(ws: server.WebSocketServerProtocol):
 
             d: dict = json.loads(r)
 
+            if not isinstance(d, dict):
+                await ws.close(4002, 'Invalid Payload Type')
+
             valid_ws = False
 
             for key, _ in sessions.items():
@@ -21,6 +24,9 @@ async def gateway_handler(ws: server.WebSocketServerProtocol):
                     for session in sesions:
                         if d.get('id', '') == session:
                             valid_ws = True
+
+            if d.get('session_id') == secret:
+                valid_ws = True
 
             if not valid_ws:
                 await ws.close(4001, 'Invalid Gateway ID for This Port')
