@@ -61,28 +61,5 @@ def get_port() -> int:
 
     return port
 
-async def handle_port(ws: server.WebSocketServerProtocol):
-    port = get_port()
-    id = snowflake.snowflake(port)
-    
-    connection.sessions[port].append(id)
-
-    await ws.send(json.dumps({'url': f'wss://gateway.vincentrps.xyz:{port}', 'id': id}))
-    # ws.remote_address
-    await ws.close()
-
-async def serve_port():
-    print('DEBUG:gateway:Serving IPs!')
-    await asyncio.sleep(10)
-
-    await server.serve(
-            handle_port,
-            '0.0.0.0',
-            443,
-            ping_timeout=2,
-            process_request=health_check
-        )
-
-loop.run_until_complete(serve_port())
 loop.run_until_complete(start_gateway())
 loop.run_forever()
