@@ -16,7 +16,7 @@ async def health_check(path, head):
     if path == '/health':
         return http.HTTPStatus.OK, [], b'OK\n'
     elif path == '/port':
-        return json.dumps({'port': get_port()})
+        return http.HTTPStatus.OK, [], '{}'.format(json.dumps({'port': get_port()})).encode()
 
 
 async def start_gateway():
