@@ -64,13 +64,16 @@ async def serve_port():
     print('DEBUG:gateway:Serving IPs!')
     await asyncio.sleep(10)
 
-    await server.serve(
-        handle_port,
-        '0.0.0.0',
-        443,
-        ping_timeout=2,
-        process_request=health_check
-    )
+    try:
+        await server.serve(
+            handle_port,
+            '0.0.0.0',
+            443,
+            ping_timeout=2,
+            process_request=health_check
+        )
+    except:
+        return await serve_port()
 
 loop.run_until_complete(serve_port())
 loop.run_until_complete(start_gateway())
