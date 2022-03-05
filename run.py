@@ -24,7 +24,7 @@ async def start_gateway():
     for port in range(49151):
         if port < 1024:
             pass
-        if port > 10000:
+        elif port > 10000:
             break
         else:
             try:
