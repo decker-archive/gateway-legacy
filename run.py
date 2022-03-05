@@ -15,6 +15,8 @@ ports_ready = asyncio.Event()
 async def health_check(path, head):
     if path == '/health':
         return http.HTTPStatus.OK, [], b'OK\n'
+    elif path == '/port':
+        return get_port()
 
 
 async def start_gateway():
@@ -45,22 +47,22 @@ async def start_gateway():
 
     ports_ready.set()
 
-def get_port(ws) -> int:
+def get_port() -> int:
     # port = randint(1024, 49151)
     port = randint(1024, 10000)
 
     av = connection.sessions.get(port)
 
     if av == None:
-        return get_port(ws)
+        return get_port()
 
     if len(av) > 3999:
-        return get_port(ws)
+        return get_port()
 
     return port
 
 async def handle_port(ws: server.WebSocketServerProtocol):
-    port = get_port(ws)
+    port = get_port()
     id = snowflake.snowflake(port)
     
     connection.sessions[port].append(id)

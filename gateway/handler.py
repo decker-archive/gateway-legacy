@@ -16,22 +16,6 @@ async def gateway_handler(ws: server.WebSocketServerProtocol):
             if not isinstance(d, dict):
                 await ws.close(4002, 'Invalid Payload Type')
 
-            valid_ws = False
-
-            for key, _ in sessions.items():
-                if key == ws.port:
-                    sesions = sessions.get(key, [])
-                    for session in sesions:
-                        if d.get('id', '') == session:
-                            valid_ws = True
-
-            if d.get('session_id', '') == secret:
-                valid_ws = True
-
-            if valid_ws == False:
-                await ws.close(4001, 'Invalid Gateway ID for This Port')
-                break
-
             try:
                 encoding = d['encoding']
             except (KeyError, IndexError):
