@@ -22,7 +22,7 @@ async def start_gateway():
     await asyncio.sleep(10)
 
     for port in range(49151):
-        if port < 1024:
+        if port < 1024 or port == 443:
             pass
         elif port > 10000:
             break
