@@ -43,7 +43,8 @@ async def start_gateway():
     ports_ready.set()
 
 def get_port(ws) -> int:
-    port = randint(1024, 49151)
+    # port = randint(1024, 49151)
+    port = randint(1024, 10000)
 
     av = connection.sessions.get(port)
 
