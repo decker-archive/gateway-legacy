@@ -62,7 +62,7 @@ async def handle_port(ws: server.WebSocketServerProtocol):
 
 async def serve_port():
     print('DEBUG:gateway:Serving IPs!')
-    await asyncio.sleep(4)
+    await asyncio.sleep(10)
 
     await server.serve(
         handle_port,
