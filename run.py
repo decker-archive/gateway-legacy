@@ -6,7 +6,6 @@ from random import randint
 from websockets import server
 from gateway import handler, connection
 from gateway.db import loop
-from gateway.vendor import snowflake
 
 logging.basicConfig(level=logging.DEBUG)
 
