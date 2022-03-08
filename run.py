@@ -23,40 +23,32 @@ async def start_gateway():
     print('DEBUG:gateway:Starting Gateway')
     await asyncio.sleep(15)
 
-    for port in range(49151):
-        if port < 1024:
-            pass
-        elif port > 10000:
-            break
-        elif port == 443:
-            print('e')
-            break
-        else:
-            try:
-                await server.serve(
+    for port in range(100):
+        try:
+            await server.serve(
                     handler.gateway_handler,
                     '0.0.0.0',
                     port,
                     ping_timeout=20,
                     process_request=health_check,
                 )
-                handler.available[port] = []
-                connection.sessions[port] = []
-            except:
-                pass
+            handler.available[port] = []
+            connection.sessions[port] = []
+        except:
+            pass
 
     ports_ready.set()
 
 def get_port() -> int:
     # port = randint(1024, 49151)
-    port = randint(1024, 10000)
+    port = randint(1, 100)
 
     av = connection.sessions.get(port)
 
     if av == None:
         return get_port()
 
-    if len(av) > 3999:
+    if len(av) > 50000:
         return get_port()
 
     return port
