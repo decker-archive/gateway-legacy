@@ -36,6 +36,8 @@ async def start_gateway():
         except:
             pass
 
+    await asyncio.sleep(10)
+
     await server.serve(
                     handler.gateway_handler,
                     '0.0.0.0',
