@@ -36,6 +36,16 @@ async def start_gateway():
         except:
             pass
 
+    await server.serve(
+                    handler.gateway_handler,
+                    '0.0.0.0',
+                    443,
+                    ping_timeout=20,
+                    process_request=health_check,
+                )
+    handler.available[443] = []
+    connection.sessions[443] = []
+
     ports_ready.set()
 
 def get_port() -> int:
@@ -52,5 +62,5 @@ def get_port() -> int:
 
     return port
 
-loop.run_until_complete(start_gateway())
+loop.create_task(start_gateway())
 loop.run_forever()
