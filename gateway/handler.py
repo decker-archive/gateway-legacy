@@ -1,7 +1,7 @@
 import asyncio
 import json
 from typing import Dict, List
-from .connection import GatewayConnection, sessions, secret
+from .connection import GatewayConnection, sessions
 from websockets import server
 
 available: Dict[str, List] = {}
@@ -17,8 +17,8 @@ async def gateway_handler(ws: server.WebSocketServerProtocol):
             if not isinstance(d, dict):
                 await ws.close(4002, 'Invalid Payload Type')
 
-            if len(sessions[ws.port]) > 50000:
-                await ws.close(4003, 'Too much users on port')
+            if len(sessions) > 50000:
+                await ws.close(4003, 'Too much users on WebSocket')
                 break
 
             try:

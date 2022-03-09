@@ -16,7 +16,7 @@ def byte(data: Union[str, bytes]) -> bytes:
 
 
 secret = 'adb8ddecad0ec633da6651a1b441026fdc646892'
-sessions: Dict[str, List[int]] = {}
+sessions = []
 
 
 class GatewayConnection:
@@ -256,11 +256,11 @@ class GatewayConnection:
             self.closed = True
             return
 
-        self.id = data.get('id', '')
-
         connections.add(self)
         self.session_id = data.get('session_id', '')
         await self.check_session_id()
+
+        sessions.append(self.session_id)
 
         self.presences = data.get('presences', False)
 
@@ -274,7 +274,7 @@ class GatewayConnection:
             await self.do_recv()
         except exceptions.ConnectionClosedError:
             try:
-                sessions[self.ws.port].remove(self.id)
+                sessions.remove(self.id)
             except ValueError:
                 pass
             return

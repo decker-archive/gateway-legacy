@@ -1,13 +1,15 @@
 import asyncio
 import logging
 import http
+import os
 import json
-from random import randint
+from dotenv import load_dotenv
 from websockets import server
-from gateway import handler, connection
+from gateway import handler
 from gateway.db import loop
 
 logging.basicConfig(level=logging.DEBUG)
+load_dotenv()
 
 ports_ready = asyncio.Event()
 
@@ -15,63 +17,47 @@ ports_ready = asyncio.Event()
 async def health_check(path, head):
     if path == '/health':
         return http.HTTPStatus.OK, [], b'OK\n'
-    elif path == '/port':
-        return (
+    elif path == '/available':
+        return {
             http.HTTPStatus.OK,
             [],
-            '{}'.format(json.dumps({'port': get_port()})).encode(),
-        )
+            '{}'.format(get_available_gateway()).encode()
+        }
+
+async def echo_chamber(ws: server.WebSocketServerProtocol):
+    while True:
+        r = await ws.recv()
+        break
+    d = json.loads(r)
+    await ws.send(json.dumps(d))
+    await ws.close()
 
 
 async def start_gateway():
     print('DEBUG:gateway:Starting Gateway')
     await asyncio.sleep(15)
 
-    for port in range(4200):
-        if port < 4000:
-            pass
-        elif port == 4101:
-            return
-        else:
-            try:
-                await server.serve(
+    if os.getenv('environd', False) == True:
+        await server.serve(
                 handler.gateway_handler,
                 '0.0.0.0',
-                port,
+                443,
                 ping_timeout=20,
                 process_request=health_check,
-            )
-                handler.available[port] = []
-                connection.sessions[port] = []
-            except:
-                pass
-
-    await asyncio.sleep(10)
-
-    await server.serve(
-        handler.gateway_handler,
-        '0.0.0.0',
-        443,
-        ping_timeout=20,
-        process_request=health_check,
-    )
+        )
+    else:
+        await server.serve(
+            echo_chamber,
+            '0.0.0.0',
+            443,
+            ping_timeout=1,
+            process_request=health_check,
+        )
 
     ports_ready.set()
 
-
-def get_port() -> int:
-    # port = randint(1024, 49151)
-    port = randint(1, 100)
-
-    av = connection.sessions.get(port)
-
-    if av == None:
-        return get_port()
-
-    if len(av) > 50000:
-        return get_port()
-
-    return port
+def get_available_gateway():
+    return 'https://gateway-prod-1.vincentrps.xyz'
 
 
 loop.create_task(start_gateway())
