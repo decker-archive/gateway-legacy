@@ -6,6 +6,7 @@ from websockets import server
 
 available: Dict[str, List] = {}
 
+
 async def gateway_handler(ws: server.WebSocketServerProtocol):
     try:
         while True:
@@ -15,7 +16,7 @@ async def gateway_handler(ws: server.WebSocketServerProtocol):
 
             if not isinstance(d, dict):
                 await ws.close(4002, 'Invalid Payload Type')
-            
+
             if len(sessions[ws.port]) > 50000:
                 await ws.close(4003, 'Too much users on port')
                 break
