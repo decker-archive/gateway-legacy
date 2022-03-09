@@ -11,8 +11,6 @@ from gateway.db import loop
 logging.basicConfig(level=logging.DEBUG)
 load_dotenv()
 
-ports_ready = asyncio.Event()
-
 
 async def health_check(path, head):
     if path == '/health':
@@ -55,8 +53,6 @@ async def start_gateway():
             ping_timeout=1,
             process_request=health_check,
         )
-
-    ports_ready.set()
 
 def get_available_gateway():
     return 'https://gateway-prod-1.vincentrps.xyz'
