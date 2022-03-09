@@ -35,7 +35,7 @@ async def echo_chamber(ws: server.WebSocketServerProtocol):
 
 async def start_gateway():
     print('DEBUG:gateway:Starting Gateway')
-    await asyncio.sleep(15)
+    await asyncio.sleep(20)
 
     if os.getenv('environd', 'false') == 'true':
         await server.serve(
