@@ -5,7 +5,7 @@ import os
 import json
 from dotenv import load_dotenv
 from websockets import server
-from gateway import handler
+from gateway import handler, connection
 from gateway.db import loop
 
 logging.basicConfig(level=logging.DEBUG)
@@ -23,6 +23,8 @@ async def health_check(path, head):
             [],
             '{}'.format(get_available_gateway()).encode()
         }
+    elif path == '/_dev/clients':
+        return '{}'.format(len(connection.sessions)).encode()
 
 async def echo_chamber(ws: server.WebSocketServerProtocol):
     while True:
