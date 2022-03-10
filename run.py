@@ -37,7 +37,7 @@ async def start_gateway():
     print('DEBUG:gateway:Starting Gateway')
     await asyncio.sleep(40)
 
-    if os.getenv('environd', 'false') == 'true':
+    if os.getenv('environd', 'false') == 'true' or os.getenv('environd', 'false') == True:
         await server.serve(
                 handler.gateway_handler,
                 '0.0.0.0',
