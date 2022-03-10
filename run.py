@@ -41,7 +41,7 @@ async def start_gateway():
         await server.serve(
                 handler.gateway_handler,
                 '0.0.0.0',
-                443,
+                2000,
                 ping_timeout=20,
                 process_request=health_check,
         )
@@ -49,7 +49,7 @@ async def start_gateway():
         await server.serve(
             echo_chamber,
             '0.0.0.0',
-            443,
+            2000,
             ping_timeout=1,
             process_request=health_check,
         )
