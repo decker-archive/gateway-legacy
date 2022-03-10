@@ -19,10 +19,10 @@ async def health_check(path, head):
         return {
             http.HTTPStatus.OK,
             [],
-            '{}'.format(get_available_gateway()).encode()
+            '{}'.format(json.dumps(get_available_gateway())).encode()
         }
     elif path == '/_dev/clients':
-        return '{}'.format(len(connection.sessions)).encode()
+        return '{}'.format(json.dumps(len(connection.sessions))).encode()
 
 async def echo_chamber(ws: server.WebSocketServerProtocol):
     while True:
