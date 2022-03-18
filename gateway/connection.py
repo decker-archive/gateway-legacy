@@ -46,7 +46,7 @@ class GatewayConnection:
             else:
                 find = await users.find_one({'session_ids': [self.session_id]})
                 to_give = {
-                    'id': find['id'],
+                    '_id': find['_id'],
                     'username': find['username'],
                     'separator': find['separator'],
                     'avatar_url': find['avatar_url'],
@@ -104,12 +104,12 @@ class GatewayConnection:
         if self.session_id == secret:
             return
 
-        membered = await members.find({'user': {'id': self.user_info['id']}})
+        membered = await members.find({'user': {'_id': self.user_info['_id']}})
 
         guilds_to_give: list[dict] = []
 
         for member in membered:
-            obj: dict = await guilds.find_one({'id': member['guild_id']})
+            obj: dict = await guilds.find_one({'_id': member['guild_id']})
             obj2: dict = await channels.find_one({'guild_id': member['guild_id']})
             obj['channels'] = obj2
 
@@ -147,7 +147,7 @@ class GatewayConnection:
 
             _d = data.get('d')
             d = {'t': _d['event_name'].upper(), 'd': _d['data']}
-            s = await users.find_one({'id': _d['user']})
+            s = await users.find_one({'_id': _d['user']})
             for connection in connections:
                 for session_id in s['session_ids']:
                     if session_id == connection.session_id:
@@ -174,7 +174,7 @@ class GatewayConnection:
                 # could be a mistake?
                 return
 
-            user = await users.find_one({'id': data['id']})
+            user = await users.find_one({'_id': data['_id']})
 
             data = {
                 't': 'NOTIFICATION',
@@ -211,7 +211,7 @@ class GatewayConnection:
 
             try:
                 d = {
-                    'id': self.user_info['id'],
+                    '_id': self.user_info['_id'],
                     'd': {
                         'type': data['type'],
                         'description': data['description'],
@@ -226,7 +226,7 @@ class GatewayConnection:
 
             dis['t'] = 'PRESENCE_UPDATE'
 
-            ms = members.find({'id': self.user_info['id']})
+            ms = members.find({'_id': self.user_info['_id']})
 
             for member in ms:
                 _mems = await guilds.find_one({'guild_id': member['guild_id']})
