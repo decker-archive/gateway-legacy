@@ -1,4 +1,4 @@
 websockets
 pymongo[srv]
-motor
+motor==2.5.0
 python-dotenv
