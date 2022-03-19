@@ -2,3 +2,4 @@ websockets
 pymongo[srv]
 motor==2.5.0
 python-dotenv
+ulid-py

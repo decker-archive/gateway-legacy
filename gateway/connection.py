@@ -1,6 +1,7 @@
 import asyncio
 import zlib
 import json
+import ulid
 from typing import Sequence, Any, Set, Union, Dict, List
 from websockets import server, exceptions
 from .db import users, members, guilds, channels, presences
@@ -82,7 +83,7 @@ class GatewayConnection:
         await self.send(
             {
                 't': 'HELLO',
-                's': self.session_id,
+                's': self._user_session_id,
                 'd': None,
                 'i': 'Sent once we have verified your session_id, '
                 'the data given will be null. '
@@ -117,7 +118,7 @@ class GatewayConnection:
 
         for guild in guilds_to_give:
             await self.send(
-                {'t': 'GUILD_INIT', 's': self.session_id, 'd': guild, 'i': ''}
+                {'t': 'GUILD_INIT', 's': self._user_session_id, 'd': guild, 'i': ''}
             )
 
     async def poll_recv(self, data: dict):
@@ -260,6 +261,8 @@ class GatewayConnection:
         self.session_id = data.get('session_id', '')
         await self.check_session_id()
 
+        self._user_session_id = ulid.new().str
+
         sessions.append(self.session_id)
 
         self.presences = data.get('presences', False)
@@ -274,9 +277,10 @@ class GatewayConnection:
             await self.do_recv()
         except exceptions.ConnectionClosedError:
             try:
-                sessions.remove(self.id)
+                sessions.remove(self.session_id)
             except ValueError:
-                pass
+                del self._user_session_id
+                del self.session_id
             return
 
 
